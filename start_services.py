@@ -18,7 +18,16 @@ import sys
 def run_command(cmd, cwd=None):
     """Run a shell command and print it."""
     print("Running:", " ".join(cmd))
-    subprocess.run(cmd, cwd=cwd, check=True)
+    try:
+        if platform.system() == "Windows":
+            # Convert command list to a single string and use shell=True for Windows
+            subprocess.run(" ".join(cmd), cwd=cwd, check=True, shell=True)
+        else:
+            # Use the list format for Unix-like systems
+            subprocess.run(cmd, cwd=cwd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        raise
 
 def clone_supabase_repo():
     """Clone the Supabase repository using sparse checkout if not already present."""
