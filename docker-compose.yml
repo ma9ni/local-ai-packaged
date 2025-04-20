@@ -51,18 +51,19 @@ x-init-ollama: &init-ollama
     # Change the name of the LLM and num_ctx as you see fit.
 
 services:
+
   flowise:
     image: flowiseai/flowise
     restart: unless-stopped
     container_name: flowise
     environment:
-        - PORT=3001
+      - PORT=3001
     ports:
-        - 3001:3001
+      - 3001:3001
     extra_hosts:
-      - "host.docker.internal:host-gateway"        
+      - "host.docker.internal:host-gateway"
     volumes:
-        - ~/.flowise:/root/.flowise
+      - ~/.flowise:/root/.flowise
     entrypoint: /bin/sh -c "sleep 3; flowise start"
 
   open-webui:
@@ -80,12 +81,66 @@ services:
     <<: *service-n8n
     container_name: n8n-import
     entrypoint: /bin/sh
+    restart: "no"
     command:
       - "-c"
-      - "n8n import:credentials --separate --input=/backup/credentials && n8n import:workflow --separate --input=/backup/workflows"
+      - |
+        echo "Starting import process..."
+        sleep 10 # Wait for n8n to be ready
+        
+        # Import credentials and workflows
+        echo "Importing credentials..."
+        n8n import:credentials --separate --input=/backup/credentials
+        
+        echo "Importing workflows..."
+        n8n import:workflow --separate --input=/backup/workflows
+        
+        echo "Import process completed. Container will now exit."
+        exit 0
     volumes:
-      - ./n8n/backup:/backup  
+      - ./n8n/backup:/backup
 
+
+
+  n8n-export:
+    <<: *service-n8n
+    container_name: blinksaas-n8n-export
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    ports: [ ]
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - |
+        # Create backup directories
+        mkdir -p /backup/credentials /backup/workflows
+        echo "Waiting 60 seconds for n8n to fully initialize..."
+        sleep 60
+        
+        while true; do
+          echo "Starting export at $(date)"
+        
+          # Export workflows
+          echo "Exporting workflows..."
+          n8n list:workflow
+          n8n export:workflow --all --separate --output=/backup/workflows || echo "No workflows to export or export failed"
+        
+          # Export credentials
+          echo "Exporting credentials..."
+          n8n export:credentials --all --separate --output=/backup/credentials || echo "No credentials to export or export failed"
+        
+          # List exported files
+          echo "Exported workflows:"
+          ls -la /backup/workflows || echo "No workflows directory"
+          echo "Exported credentials:"
+          ls -la /backup/credentials || echo "No credentials directory"
+        
+          echo "Sleeping for 2 minutes before next export..."
+          sleep 120
+        done
+    volumes:
+      - ./n8n/backup:/backup
   n8n:
     <<: *service-n8n
     container_name: n8n
@@ -141,7 +196,7 @@ services:
     restart: always
     depends_on: &langfuse-depends-on
       postgres:
-        condition: service_healthy    
+        condition: service_healthy
       minio:
         condition: service_healthy
       redis:
@@ -250,7 +305,7 @@ services:
     volumes:
       - langfuse_minio_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: [ "CMD", "mc", "ready", "local" ]
       interval: 1s
       timeout: 5s
       retries: 5
@@ -260,7 +315,7 @@ services:
     image: postgres:${POSTGRES_VERSION:-latest}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -271,13 +326,13 @@ services:
     ports:
       - 127.0.0.1:5433:5432
     volumes:
-      - langfuse_postgres_data:/var/lib/postgresql/data              
+      - langfuse_postgres_data:/var/lib/postgresql/data
 
   redis:
     container_name: redis
     image: docker.io/valkey/valkey:8-alpine
     command: valkey-server --save 30 1 --loglevel warning
-    restart: unless-stopped  
+    restart: unless-stopped
     volumes:
       - valkey-data:/data
     cap_drop:
@@ -292,10 +347,10 @@ services:
         max-size: "1m"
         max-file: "1"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 3s
       timeout: 10s
-      retries: 10        
+      retries: 10
 
   searxng:
     container_name: searxng
@@ -319,14 +374,14 @@ services:
       driver: "json-file"
       options:
         max-size: "1m"
-        max-file: "1"      
+        max-file: "1"
 
   ollama-cpu:
-    profiles: ["cpu"]
+    profiles: [ "cpu" ]
     <<: *service-ollama
 
   ollama-gpu:
-    profiles: ["gpu-nvidia"]
+    profiles: [ "gpu-nvidia" ]
     <<: *service-ollama
     deploy:
       resources:
@@ -334,10 +389,10 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
   ollama-gpu-amd:
-    profiles: ["gpu-amd"]
+    profiles: [ "gpu-amd" ]
     <<: *service-ollama
     image: ollama/ollama:rocm
     devices:
@@ -345,20 +400,20 @@ services:
       - "/dev/dri"
 
   ollama-pull-llama-cpu:
-    profiles: ["cpu"]
+    profiles: [ "cpu" ]
     <<: *init-ollama
     depends_on:
       - ollama-cpu
 
   ollama-pull-llama-gpu:
-    profiles: ["gpu-nvidia"]
+    profiles: [ "gpu-nvidia" ]
     <<: *init-ollama
     depends_on:
       - ollama-gpu
 
   ollama-pull-llama-gpu-amd:
-    profiles: [gpu-amd]
+    profiles: [ gpu-amd ]
     <<: *init-ollama
     image: ollama/ollama:rocm
     depends_on:
-     - ollama-gpu-amd
+      - ollama-gpu-amd
