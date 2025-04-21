@@ -28,7 +28,7 @@ x-n8n: &service-n8n
     - N8N_RUNNERS_ENABLED=true
     - N8N_HOST=${N8N_HOSTNAME}
     - N8N_PROTOCOL=https
-    - N8N_PORT=443
+    - N8N_PORT=5678
     - N8N_WEBHOOK_URL=https://${N8N_HOSTNAME}
     - WEBHOOK_URL=https://${N8N_HOSTNAME}
     - GENERIC_TIMEZONE=UTC
@@ -172,7 +172,7 @@ services:
       - N8N_RUNNERS_ENABLED=true
       - N8N_HOST=${N8N_HOSTNAME}
       - N8N_PROTOCOL=https
-      - N8N_PORT=443
+      - N8N_PORT=5678
       - N8N_WEBHOOK_URL=https://${N8N_HOSTNAME}
       - WEBHOOK_URL=https://${N8N_HOSTNAME}
       - GENERIC_TIMEZONE=UTC
