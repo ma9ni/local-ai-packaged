@@ -93,7 +93,7 @@ Before running the services, you need to set up your environment variables for S
 > [!IMPORTANT]
 > Make sure to generate secure random values for all secrets. Never use the example values in production.
 
-3. Set the following environment variables if deploying to production, otherwise leave commented:
+3. Set the following environment variables if deploying to production, otherwise leave commented :
    ```bash
    ############
    # Caddy Config
