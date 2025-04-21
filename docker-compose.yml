@@ -26,6 +26,12 @@ x-n8n: &service-n8n
     - N8N_USER_MANAGEMENT_JWT_SECRET
     - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     - N8N_RUNNERS_ENABLED=true
+    - N8N_HOST=${N8N_HOSTNAME}
+    - N8N_PROTOCOL=https
+    - N8N_PORT=443
+    - N8N_WEBHOOK_URL=https://${N8N_HOSTNAME}
+    - WEBHOOK_URL=https://${N8N_HOSTNAME}
+    - GENERIC_TIMEZONE=UTC
 x-ollama: &service-ollama
   image: ollama/ollama:latest
   container_name: ollama
@@ -153,7 +159,23 @@ services:
       - ./n8n/backup:/backup
       - ./shared:/data/shared
     environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_DATABASE=postgres
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_ENCRYPTION_KEY
+      - N8N_USER_MANAGEMENT_JWT_SECRET
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_HOST=${N8N_HOSTNAME}
+      - N8N_PROTOCOL=https
+      - N8N_PORT=443
       - N8N_WEBHOOK_URL=https://${N8N_HOSTNAME}
+      - WEBHOOK_URL=https://${N8N_HOSTNAME}
+      - GENERIC_TIMEZONE=UTC
     depends_on:
       n8n-import:
         condition: service_completed_successfully
